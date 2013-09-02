@@ -1,0 +1,51 @@
+#!/bin/sh
+
+if [ $# -lt 2 ]; then
+    echo "Usage: "$(basename $0)" <type> <filename>"
+    echo ""
+    echo "Known types:"
+    echo "  php, python"
+    echo "  sh, bash, dash"
+    echo "  c, cpp, h"
+    echo "  html"
+    exit 1
+fi
+
+type=$1
+filename=$2
+hwstring="Hello, World!"
+
+if [ "$filename" = "-" ]; then
+    filename=/dev/stdout
+    hdef='CHANGE_ME'
+else
+    hfilename=`basename "$filename"`
+    hdef=`echo "${hfilename%.*}" | tr '. ' '_' | tr '[:lower:]' '[:upper:]'`
+fi
+
+case $type in
+    "php")
+        echo -en "<?php\n\necho '$hwstring';\n\n?>" > $filename;;
+    "python" | "python2" | "python3")
+        echo -en "#!/usr/bin/env $type\n# -*- encoding: utf-8 -*-\n\nprint('$hwstring');\n" > $filename;;
+    "sh" | "bash" | "dash")
+        echo -en "#!/bin/"$type"\n\necho '$hwstring'\n" > $filename;;
+    "c")
+        echo -en "#include <stdio.h>\n\nint main()\n{\n" > $filename
+        echo -en '    printf("'$hwstring'\\n");\n' >> $filename
+        echo -en '    return 0;\n' >> $filename
+        echo -en '}\n' >> $filename;;
+    "cpp" | "c++")
+        echo -en "#include <iostream>\n\nint main()\n{\n" > $filename
+        echo -en '    std::cout << "'$hwstring'" << std::endl;\n' >> $filename
+        echo -en '    return 0;\n' >> $filename
+        echo -en '}\n' >> $filename;;
+    "h" | "hpp")
+        echo -en '#ifndef '$hdef'\n#define '$hdef'\n\n\n#endif\n' > $filename;;
+    "html")
+        echo -en '<!DOCTYPE html>\n<html>\n<head>\n' > $filename
+        echo -en '<title>'$hwstring'</title>\n' >> $filename
+        echo -en '</head>\n<body>\n\n' >> $filename
+        echo -en '<h1>'$hwstring'</h1>\n\n' >> $filename
+        echo -en '</body>\n</html>\n' >> $filename
+esac
