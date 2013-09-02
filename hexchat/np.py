@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 # Python 2.7 Module
+# Chromium 29.0.1547.57 (217859)
+# HexChat 2.9.5
 
 __module_name__ = "MPD np-script"
 __module_version__ = "1.0"
