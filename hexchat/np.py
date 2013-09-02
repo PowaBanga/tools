@@ -71,7 +71,10 @@ def get_mpd_string():
     
     c = MPDClient()
     c.timeout = 2
-    c.connect('localhost', 6600)
+    try:
+        c.connect('localhost', 6600)
+    except:
+        return None
     
     status = c.status()
     
