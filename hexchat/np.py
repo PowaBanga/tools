@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+# Python 2.7 Module
+
 __module_name__ = "MPD np-script"
 __module_version__ = "1.0"
 __module_description__ = "Displayes the current song using the /np command"
