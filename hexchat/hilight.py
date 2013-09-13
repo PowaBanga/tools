@@ -170,6 +170,13 @@ Usage: /HILIGHT SET ( ON | OFF | FILE <soundfile> | COMMAND <shell-command> )
 /HILIGHT SET COMMAND <shell-command>
     Is command that should be used to play the soundfile. May contain {file}
     placeholder, so the script knows where to place the soundfile.
+    e.g.:
+    
+    /HILIGHT SET COMMAND play -v 0.1
+    The filename is automatically appended to the command when executed
+    
+    /HILIGHT SET COMMAND play {file} -v 0.1
+    The filename is inserted at the place where "{file}" is.
 '''
 
 if hexchat.get_pluginpref("regexhilight_sound") is None:
