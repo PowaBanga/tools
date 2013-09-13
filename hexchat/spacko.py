@@ -25,7 +25,7 @@ def spacko(word, word_eol, userdata):
     
     spacko_string = l[random.randrange(len(l))]
     
-    xchat.command(u'say »{}«'.format(spacko_string).encode('utf-8'))
+    xchat.command('say »{}«'.format(spacko_string))
     
 
 xchat.hook_command("SPACKO", spacko, help="/SPACKO")
