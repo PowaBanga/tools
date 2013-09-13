@@ -18,19 +18,6 @@ from urllib.parse import urlparse
 
 import json
 
-def trydecode(s, charsets=None):
-    if charsets is None:
-        charsets = ['utf-8', 'latin1']
-    
-    for c in charsets:
-        try:
-            tmps = s.decode(c)
-        except:
-            pass
-        else:
-            return tmps
-    raise Exception('No matching charset found.')
-
 
 def get_youtube_string():
     
@@ -75,7 +62,7 @@ def get_mpd_string():
     c.timeout = 2
     try:
         c.connect('localhost', 6600)
-    except Exception as e:
+    except:
         return None
     
     status = c.status()
