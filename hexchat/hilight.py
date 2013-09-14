@@ -1,13 +1,16 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
+
+# Python 3.3
+# HexChat 2.9.6
 
 __module_name__ = "Regex Hilight"
 __module_version__ = "1.0"
 __module_description__ = "Highlighting with Regex"
 
-# Python 3.3
-# HexChat 2.9.6
-
 import hexchat
+
+hexchat.emit_print("Generic Message", "Loading", "{} {} - {}".format(__module_name__, __module_version__, __module_description__))
+
 import re
 import os
 import subprocess
@@ -143,11 +146,10 @@ def hilight(word, word_eol, userdata):
         else:
             info("Unknown command: SET {}".format(subcmd))
     elif cmd == 'INFO':
-        print('info..')
         settings(hexchat)
     else:
         info("Unknown command.")
-    hexchat.EAT_ALL
+    return hexchat.EAT_ALL
 
 
 
@@ -186,4 +188,3 @@ hexchat.hook_server("PRIVMSG", privmsg, userdata=ud)
 hexchat.hook_command("HILIGHT", hilight, help=help_text)
 hexchat.hook_command("HL", hilight, help=help_text)
 
-hexchat.emit_print("Generic Message", __module_name__, "Loaded!")

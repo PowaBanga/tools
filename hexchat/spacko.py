@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Python 2.7 Module
-# HexChat 2.9.5
+# Python 3.3 Module
+# HexChat 2.9.6
 
 __module_name__ = "Spacko Script"
 __module_version__ = "1.0"
 __module_description__ = "Spacko Spacko Spacko /spacko"
 
-import xchat
+import hexchat
+
+hexchat.emit_print("Generic Message", "Loading", "{} {} - {}".format(__module_name__, __module_version__, __module_description__))
+
 import random
 import time
 
@@ -16,17 +19,17 @@ def spacko(word, word_eol, userdata):
     random.seed(time.time())
     
     l = [
-        u'Ist der Hund kugelrund, frisst er Spacko, wie ein Schlund!',
-        u'Frisst Ihr Hund Spacko-Futter, wird er selbst zu Spacko-Futter!',
-        u'Spacko-Futter für den Hund, da gehts dem ganzen Hund gesund!',
-        u'Kauft Spacko-Futter für euren Spacko-Hund!',
-        u'Spacko, Spacko, Spacko-Hund, und schnell in meinem Mund!'
+        'Ist der Hund kugelrund, frisst er Spacko, wie ein Schlund!',
+        'Frisst Ihr Hund Spacko-Futter, wird er selbst zu Spacko-Futter!',
+        'Spacko-Futter für den Hund, da gehts dem ganzen Hund gesund!',
+        'Kauft Spacko-Futter für euren Spacko-Hund!',
+        'Spacko, Spacko, Spacko-Hund, und schnell in meinem Mund!'
     ]
     
     spacko_string = l[random.randrange(len(l))]
     
-    xchat.command('say »{}«'.format(spacko_string))
+    hexchat.command('say »{}«'.format(spacko_string))
     
 
-xchat.hook_command("SPACKO", spacko, help="/SPACKO")
+hexchat.hook_command("SPACKO", spacko, help="/SPACKO")
 

@@ -5,18 +5,19 @@
 # HexChat 2.9.6
 
 __module_name__ = "MPD np-script"
-__module_version__ = "1.0"
+__module_version__ = "1.1"
 __module_description__ = "Displayes the current song using the /np command"
 
-import xchat
-from os import path
+import hexchat
+
+hexchat.emit_print("Generic Message", "Loading", "{} {} - {}".format(__module_name__, __module_version__, __module_description__))
+
 from mpd import MPDClient
 
-
+import os
+import json
 import http.client
 from urllib.parse import urlparse
-
-import json
 
 
 def get_youtube_string():
@@ -80,7 +81,7 @@ def get_mpd_string():
         filename = song.get('file', None)
         if filename is not None:
             filename = filename
-            filename = path.basename(filename).replace('_', ' ')
+            filename = os.path.basename(filename).replace('_', ' ')
             filename, _, ext = filename.rpartition('.')
             if filename == '':
                 filename = ext
@@ -94,7 +95,7 @@ def get_mpd_string():
             metalist.append(title)
     
     if len(metalist) == 0:
-        xchat.prnt('Keine Metadaten gefunden.')
+        hexchat.prnt('Keine Metadaten gefunden.')
         return
     
     metastr = ' - '.join(metalist)
@@ -116,13 +117,14 @@ def np(word, word_eol, userdata):
         metastr = get_youtube_string()
     
     if metastr is None:
-        xchat.prnt('Es wird zur zeit nichts abgespielt.')
+        hexchat.prnt('Es wird zur zeit nichts abgespielt.')
         return
     
-    
     outputstr = '♫ {} ♫'.format(metastr)
-    xchat.command('me is listening to: {}'.format(outputstr))
+    hexchat.command('me is listening to: {}'.format(outputstr))
+    return hexchat.EAT_XCHAT
     
 
-xchat.hook_command("NP", np, help="/NP Displays the current song if MPD is playing.")
+hexchat.hook_command("NP", np, help="/NP Displays the current song if MPD is playing.")
+
 
