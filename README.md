@@ -6,7 +6,7 @@ Some tools/scripts I might or might not use occasionally.
 * scripts/mkscript - Bash script that creates small initial script/programming files
 
         ~$ mkscript python filename.py
-        ~$ mkscript c filename.py
+        ~$ mkscript c filename.c
 
 * hexchat/np.py - Now Playing script for mpd (and YouTube, though only with chromium)
 * hexchat/spacko.py - Sends a random quote.
