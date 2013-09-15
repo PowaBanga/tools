@@ -96,7 +96,7 @@ def get_mpd_string():
     
     if len(metalist) == 0:
         hexchat.prnt('Keine Metadaten gefunden.')
-        return
+        return None
     
     metastr = ' - '.join(metalist)
     
@@ -118,7 +118,7 @@ def np(word, word_eol, userdata):
     
     if metastr is None:
         hexchat.prnt('Es wird zur zeit nichts abgespielt.')
-        return
+        return hexchat.EAT_XCHAT
     
     outputstr = '♫ {} ♫'.format(metastr)
     hexchat.command('me is listening to: {}'.format(outputstr))
