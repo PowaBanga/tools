@@ -126,7 +126,7 @@ def textmessage(word, word_eol, userdata):
 def nickchange(word, word_eol, userdata):
     oldnick = hexchat.strip(word[0])
     newnick = hexchat.strip(word[1])
-    for oldnick, channel in userdata:
+    for oldnick, channel in list(userdata.items()):
         if hexchat.nickcmp(oldnick, newnick) == 0:
             userdata[(newnick, channel)] = userdata[(oldnick, channel)]
             del userdata[(oldnick, channel)]
@@ -136,6 +136,20 @@ def nickchange(word, word_eol, userdata):
 # /nohide command. just displays the current stored nicks per channel.
 def nohide(word, word_eol, userdata):
     cleanup(userdata)
+    
+    if len(word) > 1:
+        channel_list = word[1:]
+    else:
+        channel_list = None
+    
+    def in_channel_list(chan):
+        if channel_list is None:
+            return True
+        else:
+            for c in channel_list:
+                if hexchat.nickcmp(c, chan) == 0:
+                    return True
+            return False
     
     nclist = list(userdata.keys())
     
@@ -147,18 +161,15 @@ def nohide(word, word_eol, userdata):
     chanlist.sort()
     
     hexchat.emit_print('Generic Message', 'NoHide', \
-        '{} Users'.format(len(nclist)))
+        '{} Users in {} Channels'.format(len(nclist), len(chanlist)))
     
-    perline = 10
     for chan in chanlist:
-        nicklist = chans[chan]
-        nicklist.sort()
-        #hexchat.emit_print('Generic Message', '*', '\x02{}\x02'.format(chan))
-        leftpart = '\x02{}\x02'.format(chan)
-        for i in range(0, len(nicklist), perline):
-            hexchat.emit_print('Generic Message', leftpart, \
-                ', '.join(nicklist[i:i+perline]))
-            leftpart = '*'
+        if in_channel_list(chan):
+            nicklist = chans[chan]
+            nicklist.sort()
+            #hexchat.emit_print('Generic Message', '*', '\x02{}\x02'.format(chan))
+            leftpart = '\x02{}\x02'.format(chan)
+            hexchat.emit_print('Generic Message', leftpart, '({}) '.format(len(nicklist)) + (', '.join(nicklist)))
         
     return hexchat.EAT_XCHAT
 
