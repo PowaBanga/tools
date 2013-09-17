@@ -126,10 +126,10 @@ def textmessage(word, word_eol, userdata):
 def nickchange(word, word_eol, userdata):
     oldnick = hexchat.strip(word[0])
     newnick = hexchat.strip(word[1])
-    for oldnick, channel in list(userdata.items()):
-        if hexchat.nickcmp(oldnick, newnick) == 0:
-            userdata[(newnick, channel)] = userdata[(oldnick, channel)]
-            del userdata[(oldnick, channel)]
+    for nick, channel in list(userdata.keys()):
+        if hexchat.nickcmp(oldnick, nick) == 0:
+            userdata[(newnick, channel)] = userdata[(nick, channel)]
+            del userdata[(nick, channel)]
     return hexchat.EAT_NONE
 
 
