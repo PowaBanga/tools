@@ -118,11 +118,11 @@ def np(word, word_eol, userdata):
     
     if metastr is None:
         hexchat.prnt('Es wird zur zeit nichts abgespielt.')
-        return hexchat.EAT_XCHAT
+        return hexchat.EAT_HEXCHAT
     
     outputstr = '♫ {} ♫'.format(metastr)
     hexchat.command('me is listening to: {}'.format(outputstr))
-    return hexchat.EAT_XCHAT
+    return hexchat.EAT_HEXCHAT
     
 
 hexchat.hook_command("NP", np, help="/NP Displays the current song if MPD is playing.")
