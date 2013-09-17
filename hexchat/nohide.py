@@ -17,11 +17,8 @@ import os
 import re
 from collections import defaultdict
 
-
 nickdict = {}
 NICK_TIMEOUT = 60*30 # 30 minutes
-
-
 
 # simulate a print event using "Generic Message"
 def _emit_print(event_name, *args):
@@ -49,7 +46,6 @@ def _emit_print(event_name, *args):
     if '$t' in p:
         leftp, rightp = p.split('$t', 1)
         hexchat.emit_print("Generic Message", leftp, rightp)
-
 
 
 def leftjoin(word, word_eol, userdata):
@@ -171,7 +167,7 @@ def nohide(word, word_eol, userdata):
             leftpart = '\x02{}\x02'.format(chan)
             hexchat.emit_print('Generic Message', leftpart, '({}) '.format(len(nicklist)) + (', '.join(nicklist)))
         
-    return hexchat.EAT_XCHAT
+    return hexchat.EAT_HEXCHAT
 
 
 # remove all the nicknames that have timeout
