@@ -17,6 +17,7 @@ from mpd import MPDClient
 import os
 import json
 import http.client
+import subprocess
 from urllib.parse import urlparse
 
 
@@ -56,7 +57,40 @@ def get_youtube_string():
                     return '{0}'.format(tabtitle)
     
     return None
+
+def get_mplayer_string():
     
+    try:
+        ret = subprocess.check_output(['pidof', 'mplayer'])
+    except subprocess.CalledProcessError:
+        try:
+            ret = subprocess.check_output(['pidof', 'gnome-mplayer'])
+        except subprocess.CalledProcessError:
+            return None
+    
+    try:
+        mplayer_pid = int(ret.strip())
+    except:
+        return None
+    
+    try:
+        ret = subprocess.check_output(['ps', 'h', '-o', 'cmd', str(mplayer_pid)])
+    except subprocess.CalledProcessError:
+        return None
+    
+    mplayer_string = os.path.basename(ret.partition(b' ')[2].decode('utf-8', 'replace')).strip()
+    mplayer_string = mplayer_string.replace('_', ' ')
+    filename, _, ext = mplayer_string.rpartition('.')
+    if len(ext) <= 5:
+        mplayer_string = filename
+    if mplayer_string != '':
+        return mplayer_string + ' (mplayer)'
+    
+    
+    
+    
+
+
 def get_mpd_string():
     
     c = MPDClient()
@@ -113,6 +147,10 @@ def get_mpd_string():
 def np(word, word_eol, userdata):
     
     metastr = get_mpd_string()
+    
+    if metastr is None:
+        metastr = get_mplayer_string()
+
     if metastr is None:
         metastr = get_youtube_string()
     
