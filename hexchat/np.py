@@ -9,7 +9,6 @@ __module_version__ = "1.1"
 __module_description__ = "Displayes the current song using the /np command"
 
 import hexchat
-
 hexchat.emit_print("Generic Message", "Loading", "{} {} - {}".format(__module_name__, __module_version__, __module_description__))
 
 from mpd import MPDClient
@@ -19,12 +18,39 @@ import json
 import http.client
 import subprocess
 from urllib.parse import urlparse
+from html import entities
+import re
 
+
+def _repl(m):
+    '''helper function for unescape_entities()'''
+    if m.group('hex') is not None:
+        return chr(int(m.group('hex'), 16))
+    elif m.group('hex') is not None:
+        return chr(int(m.group('num')))
+    elif m.group('name') is not None:
+        if m.group('name') in entities.name2codepoint:
+            return chr(entities.name2codepoint[m.group('name')])
+        else:
+            return ''
+
+def unescape_entities(text):
+    '''unescapes html entities such as &quot; &lt; etc and also &#x12af; and &#123; codepoints.'''
+    return re.sub(r'&(?:(?P<hex>#x[a-fA-F0-9]+)|(?P<num>#[0-9]+)|(?P<name>\w+));', _repl, text, re.I)
+
+def safe_to_send(text):
+    '''replaces codepoints lower than \x20, to avoid injection of linebreaks etc.'''
+    return re.sub(r'[\u0000-\u001f]+', ' ', text).strip()
 
 def get_youtube_string():
-    
-    # started chromium with cmd arg "--remote-debugging-port=9221"
-    # it's ugly, but works for now. Be sure to be behind a firewall
+    '''
+        determines the current youtube video played. Only works in
+        chrome/chromium and only if the browser is stared with
+        the argument "--remote-debugging-port=9221"
+        
+        it's certainly not the best idea, but it works. You probably shouldn't
+        use this without a firewall.
+    '''
     try:
         h = http.client.HTTPConnection('localhost:9221', timeout=2)
         h.request('GET', '/json')
@@ -51,6 +77,8 @@ def get_youtube_string():
                 if tabtitle.endswith(' - YouTube'):
                     tabtitle = tabtitle[:-10]
                 
+                tabtitle = safe_to_send(unescape_entities(tabtitle))
+                
                 if yurl is not None:
                     return '{0} ({1})'.format(tabtitle, yurl)
                 else:
@@ -59,7 +87,10 @@ def get_youtube_string():
     return None
 
 def get_mplayer_string():
-    
+    '''
+        gets the current title played in mplayer or gnome-mplayer
+        using the cheap method of reading it from the `ps` command.
+    '''
     try:
         ret = subprocess.check_output(['pidof', 'mplayer'])
     except subprocess.CalledProcessError:
@@ -92,7 +123,11 @@ def get_mplayer_string():
 
 
 def get_mpd_string():
-    
+    '''
+        gets the current song using MPDClien library
+        https://github.com/Mic92/python-mpd2
+        $ pip install python-mpd2
+    '''
     c = MPDClient()
     c.timeout = 2
     try:
