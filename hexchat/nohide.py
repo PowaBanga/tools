@@ -29,6 +29,7 @@ def _emit_print(event_name, *args):
     p = p.replace('%B', '\x02')
     p = p.replace('%O', '\x0F')
     p = p.replace('%U', '\x1F')
+    p = p.replace('%I', '\x1D')
     p = re.sub(r'\$(\d+)', r'{\1}', p) # $1 => {1}
     
     # event_text starts with $1, str.format with {0} so add an empty 
