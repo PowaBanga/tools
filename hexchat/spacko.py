@@ -29,7 +29,7 @@ def spacko(word, word_eol, userdata):
     spacko_string = l[random.randrange(len(l))]
     
     hexchat.command('say »{}«'.format(spacko_string))
-    
+    return hexchat.EAT_HEXCHAT
 
 hexchat.hook_command("SPACKO", spacko, help="/SPACKO")
 
