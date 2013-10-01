@@ -5,6 +5,10 @@ import traceback
 import tools
 
 
+CONT_TIMER = 1
+STOP_TIMER = 0
+
+
 _use_error_context = False
 _err_context_name = 'Plugin Errors'
 
@@ -41,7 +45,8 @@ class Wrapper():
     # this is being called on each callback
     def __call__(self, *args, **kwargs):
         try:
-            return self.func(*args, **kwargs)
+            ctx = tools.Context(hexchat.get_context())
+            return self.func(ctx, *args, **kwargs)
         except:
             tb = traceback.format_exc()
             if callable(self.on_error):
@@ -69,12 +74,11 @@ class ChannelCommand(Wrapper):
         if len(text_words) > 0:
             text_word = text_words[0]
             if text_word.lower() == self.prefix.lower() + self.command.lower():
-                ctx = tools.Context(hexchat.get_context())
                 word[0] = hexchat.strip(word[0]) # nick might be coloured
                 if len(word) < 4:
                     word += [None]*(4-len(word))
                 word.append(userdata)
-                return super(ChannelCommand, self).__call__(ctx, *word)
+                return super(ChannelCommand, self).__call__(*word)
         else:
             return hexchat.EAT_NONE
     

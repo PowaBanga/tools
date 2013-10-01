@@ -44,6 +44,7 @@ def _emit_print(event_name, *args):
     p = p.replace('%B', '\x02')
     p = p.replace('%O', '\x0F')
     p = p.replace('%U', '\x1F')
+    p = p.replace('%I', '\x1D')
     p = re.sub(r'\$(\d+)', r'{\1}', p) # $1 => {1}
     
     # event_text starts with $1, str.format with {0} so add an empty 
@@ -75,18 +76,16 @@ def get_or_create_context(contextname):
 # RFC 1459 - 2.3.1
 # <prefix>   ::= <servername> | <nick> [ '!' <user> ] [ '@' <host> ]
 def split_prefix(prefix):
-    
     if '!' in prefix:
         nick, _, userhostpart = prefix.partition('!')
         user, _, host = userhostpart.partition('@')
     else:
         nick, _, host = prefix.partition('@')
         user = ''
-    
     return UserTuple(nick, user, host)
-    
-    
-    
+
+
+
 
 # function to request Data from another plugin
 def request_data(cmd, callback, params='', timeout=5000, timeoutcb=None):
@@ -104,7 +103,7 @@ def request_data(cmd, callback, params='', timeout=5000, timeoutcb=None):
         hexchat.unhook(ud[3]) #hook_end_id
         hexchat.unhook(ud[4]) #hook_timeout_id
         hexchat.unhook(ud[5]) #hook_421_id
-        ud[1](ud[0])
+        ud[1](Context(hexchat.get_context()), ud[0])
         return hexchat.EAT_HEXCHAT
     
     def _timeout(ud):
