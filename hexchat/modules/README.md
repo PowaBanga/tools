@@ -111,11 +111,11 @@ def testdata(ctx, remote, word, word_eol, userdata):
     remote.send('data set 2')
     remote.send('data set 3')
     return hexchat.EAT_HEXCHAT
-```python
+```
 
 Other addons then can use this provided command using tools.request_data.
 
-```
+```python
 def results_received(ctx, result_sets):
     for result in result_sets:
         ctx.prnt(result)
