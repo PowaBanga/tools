@@ -23,11 +23,25 @@ else
     hdef=`echo "${hfilename%.*}" | tr '. ' '_' | tr '[:lower:]' '[:upper:]'`
 fi
 
+
 case $type in
     "php")
         echo -en "<?php\n\necho '$hwstring';\n\n?>" > $filename;;
     "python" | "python2" | "python3")
         echo -en "#!/usr/bin/env $type\n# -*- encoding: utf-8 -*-\n\nprint('$hwstring');\n" > $filename;;
+    "hexchat")
+        echo -en "\n" > $filename
+        echo -en "__module_name__ = 'name'\n" >> $filename
+        echo -en "__module_version__ = '0.1'\n" >> $filename
+        echo -en "__module_description__ = 'desc'\n" >> $filename
+        echo -en "\n" >> $filename
+        echo -en "import hexchat\n" >> $filename
+        echo -en "hexchat.emit_print('Generic Message',\n" >> $filename
+        echo -en "    'Loading',\n" >> $filename
+        echo -en "    '{} {} - {}'.format(\n" >> $filename
+        echo -en "        __module_name__,\n" >> $filename
+        echo -en "        __module_version__,\n" >> $filename
+        echo -en "        __module_description__))\n" >> $filename;;
     "sh" | "bash" | "dash")
         echo -en "#!/bin/"$type"\n\necho '$hwstring'\n" > $filename;;
     "c")
