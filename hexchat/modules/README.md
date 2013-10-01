@@ -15,12 +15,14 @@ sys.path.append(os.path.join(
 ```
 
 Or by setting the environment variable PYTHONPATH to include the path to the
-module. More information about that in the [Python Docs][RefPythonPath].
+module.
+
+More information about that in the [Python Docs][RefPythonPath].
 
 A 3rd. option might be to edit python.c of the HexChat plugin to include the
-path automatically and build HexChat yourself.
+path and build HexChat yourself.
 
-After that you should be able to import the the python files.
+After that you should be able to import the the python modules.
 
 ```python
 import hexchat
@@ -31,7 +33,7 @@ hooks.use_error_context(True)
 
 ## Examples
 
-I simple /reverse command.
+A simple `/reverse` command.
 
 ```python
 @hooks.command('REVERSE')
@@ -58,7 +60,7 @@ def privmsg(ctx, word, word_eol, userdata):
     ctx.prnt(word_eol[0])
 ```
 
-You can specify channel commands, e.g. "!slap".
+You can specify channel commands, e.g. `!slap`.
 This is hooked into the text event "Channel Message".
 
 ```python
@@ -72,7 +74,7 @@ def slap(ctx, nick, text, mod, idf, userdata):
     ctx.command('ME slaps {} around'.format(target))
 ```
 
-Channel commands using hooks.prefixer
+Channel commands using `hooks.prefixer()`
 
 ```python
 prefixed = hooks.prefixer('!')
@@ -96,11 +98,11 @@ def reverse(ctx, nick, text, mod, idf, userdata):
     ctx.command('SAY {}'.format(target[::-1]))
 ```
 
-hooks.provide is an experimental feature to add a simple way to provide an
-interface to your addon for other plugins to use.
+`hooks.provide()` is an experimental feature to add a simple way to provide an
+interface to your addon for other addons to use.
 
-In one addon you provide the command 'TESTDATA', that then can be used by
-other addons to request data from this addon
+In one addon you provide the command `/testdata`, that then can be used by
+other addons to request data from this addon.
 
 ```python
 @hooks.provide('TESTDATA')
@@ -113,7 +115,7 @@ def testdata(ctx, remote, word, word_eol, userdata):
     return hexchat.EAT_HEXCHAT
 ```
 
-Other addons then can use this provided command using tools.request_data.
+Other addons then can use this provided command using `tools.request_data()`.
 
 ```python
 def results_received(ctx, result_sets):
