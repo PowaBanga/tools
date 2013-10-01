@@ -44,6 +44,7 @@ def reverse(ctx, word, word_eol, userdata):
     
     rtext = word_eol[1][::-1]
     ctx.command('SAY {}'.format(rtext))
+    return hexchat.EAT_HEXCHAT
 ```
 
 Other hooks work as well.
