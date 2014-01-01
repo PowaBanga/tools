@@ -4,7 +4,7 @@
 # Chromium 29.0.1547.57 (217859)
 # HexChat 2.9.6
 
-__module_name__ = "MPD np-script"
+__module_name__ = "Now Playing Extended"
 __module_version__ = "1.1"
 __module_description__ = "Displayes the current song using the /np command"
 
@@ -47,7 +47,7 @@ def get_youtube_string():
         determines the current youtube video played. Only works in
         chrome/chromium and only if the browser is stared with
         the argument "--remote-debugging-port=9221"
-        
+
         it's certainly not the best idea, but it works. You probably shouldn't
         use this without a firewall.
     '''
@@ -59,7 +59,7 @@ def get_youtube_string():
         data = json.loads(body.decode('ascii'))
     except:
         return None
-    
+
     for tab in data:
         if tab['url'].startswith('http://www.youtube.com/') or tab['url'].startswith('https://www.youtube.com/'):
             if tab['title'].startswith('▶ '):
@@ -72,18 +72,18 @@ def get_youtube_string():
                     value = value.strip()
                     if name == 'v' and value != '':
                         yurl = 'youtu.be/{}'.format(value)
-                
+
                 tabtitle = tab['title'][2:]
                 if tabtitle.endswith(' - YouTube'):
                     tabtitle = tabtitle[:-10]
-                
+
                 tabtitle = safe_to_send(unescape_entities(tabtitle))
-                
+
                 if yurl is not None:
                     return '{0} ({1})'.format(tabtitle, yurl)
                 else:
                     return '{0}'.format(tabtitle)
-    
+
     return None
 
 def get_mplayer_string():
@@ -98,17 +98,17 @@ def get_mplayer_string():
             ret = subprocess.check_output(['pidof', 'gnome-mplayer'])
         except subprocess.CalledProcessError:
             return None
-    
+
     try:
         mplayer_pid = int(ret.strip())
     except:
         return None
-    
+
     try:
         ret = subprocess.check_output(['ps', 'h', '-o', 'cmd', str(mplayer_pid)])
     except subprocess.CalledProcessError:
         return None
-    
+
     mplayer_string = os.path.basename(ret.partition(b' ')[2].decode('utf-8', 'replace')).strip()
     mplayer_string = mplayer_string.replace('_', ' ')
     filename, _, ext = mplayer_string.rpartition('.')
@@ -116,10 +116,10 @@ def get_mplayer_string():
         mplayer_string = filename
     if mplayer_string != '':
         return mplayer_string + ' (mplayer)'
-    
-    
-    
-    
+
+
+
+
 
 
 def get_mpd_string():
@@ -134,18 +134,27 @@ def get_mpd_string():
         c.connect('localhost', 6600)
     except:
         return None
-    
+
     status = c.status()
-    
+
     if status['state'] != 'play':
         return None
-    
+
     metalist = []
     song = c.currentsong()
-    
+
     artist = song.get('artist', None)
+    if isinstance(artist, list):
+        artist = ' ／ '.join(artist)
+
     title = song.get('title', None)
+    if isinstance(title, list):
+        title = ' ／ '.join(title)
+
     album = song.get('album', None)
+    if isinstance(album, list):
+        album = ' ／ '.join(album)
+
     if artist is None and title is None and album is None:
         filename = song.get('file', None)
         if filename is not None:
@@ -162,41 +171,41 @@ def get_mpd_string():
             metalist.append(album)
         if title is not None:
             metalist.append(title)
-    
+
     if len(metalist) == 0:
         hexchat.prnt('Keine Metadaten gefunden.')
         return None
-    
+
     metastr = ' - '.join(metalist)
-    
+
     seconds = int(song.get('time', None))
     minutes = seconds // 60
     seconds = seconds % 60
-    
+
     d = {'meta': metastr, 'sec': seconds, 'min': minutes}
     metastr = '{meta} - {min}:{sec:02d}'.format(**d)
-    
+
     return metastr
 
 
 def np(word, word_eol, userdata):
-    
+
     metastr = get_mpd_string()
-    
+
     if metastr is None:
         metastr = get_mplayer_string()
 
     if metastr is None:
         metastr = get_youtube_string()
-    
+
     if metastr is None:
         hexchat.prnt('Es wird zur zeit nichts abgespielt.')
         return hexchat.EAT_HEXCHAT
-    
+
     outputstr = '♫ {} ♫'.format(metastr)
     hexchat.command('me is listening to: {}'.format(outputstr))
     return hexchat.EAT_HEXCHAT
-    
+
 
 hexchat.hook_command("NP", np, help="/NP Displays the current song if MPD is playing.")
 
