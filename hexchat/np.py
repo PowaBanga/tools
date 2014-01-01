@@ -9,7 +9,9 @@ __module_version__ = "1.1"
 __module_description__ = "Displayes the current song using the /np command"
 
 import hexchat
-hexchat.emit_print("Generic Message", "Loading", "{} {} - {}".format(__module_name__, __module_version__, __module_description__))
+hexchat.emit_print("Generic Message", "Loading", "{} {} - {}".format(
+                   __module_name__, __module_version__,
+                   __module_description__))
 
 from mpd import MPDClient
 
@@ -34,13 +36,22 @@ def _repl(m):
         else:
             return ''
 
+
 def unescape_entities(text):
-    '''unescapes html entities such as &quot; &lt; etc and also &#x12af; and &#123; codepoints.'''
-    return re.sub(r'&(?:(?P<hex>#x[a-fA-F0-9]+)|(?P<num>#[0-9]+)|(?P<name>\w+));', _repl, text, re.I)
+    '''
+    unescapes html entities such as &quot; &lt; etc and
+    also &#x12af; and &#123; codepoints.
+    '''
+    return re.sub(r'&(?:(?P<hex>#x[a-fA-F0-9]+)|(?P<num>#[0-9]+)'
+                  '|(?P<name>\w+));', _repl, text, re.I)
+
 
 def safe_to_send(text):
-    '''replaces codepoints lower than \x20, to avoid injection of linebreaks etc.'''
+    '''
+    replaces codepoints lower than \x20, to avoid injection of linebreaks etc.
+    '''
     return re.sub(r'[\u0000-\u001f]+', ' ', text).strip()
+
 
 def get_youtube_string():
     '''
@@ -61,7 +72,8 @@ def get_youtube_string():
         return None
 
     for tab in data:
-        if tab['url'].startswith('http://www.youtube.com/') or tab['url'].startswith('https://www.youtube.com/'):
+        if tab['url'].startswith('http://www.youtube.com/') or \
+                tab['url'].startswith('https://www.youtube.com/'):
             if tab['title'].startswith('▶ '):
                 up = urlparse(tab['url'])
                 params = up.query.split('&')
@@ -86,6 +98,7 @@ def get_youtube_string():
 
     return None
 
+
 def get_mplayer_string():
     '''
         gets the current title played in mplayer or gnome-mplayer
@@ -105,21 +118,19 @@ def get_mplayer_string():
         return None
 
     try:
-        ret = subprocess.check_output(['ps', 'h', '-o', 'cmd', str(mplayer_pid)])
+        ret = subprocess.check_output(['ps', 'h', '-o', 'cmd',
+                                       str(mplayer_pid)])
     except subprocess.CalledProcessError:
         return None
 
-    mplayer_string = os.path.basename(ret.partition(b' ')[2].decode('utf-8', 'replace')).strip()
+    mplayer_string = os.path.basename(
+        ret.partition(b' ')[2].decode('utf-8', 'replace')).strip()
     mplayer_string = mplayer_string.replace('_', ' ')
     filename, _, ext = mplayer_string.rpartition('.')
     if len(ext) <= 5:
         mplayer_string = filename
     if mplayer_string != '':
         return mplayer_string + ' (mplayer)'
-
-
-
-
 
 
 def get_mpd_string():
@@ -207,6 +218,5 @@ def np(word, word_eol, userdata):
     return hexchat.EAT_HEXCHAT
 
 
-hexchat.hook_command("NP", np, help="/NP Displays the current song if MPD is playing.")
-
-
+hexchat.hook_command("NP", np, help="/NP Displays the current song if "
+                     "MPD is playing.")
