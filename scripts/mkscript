@@ -73,36 +73,43 @@ case $type in
 
         echo -en "#!/usr/bin/env python\n# -*- encoding: utf-8 -*-\n\n" > $filename
         echo -en "from flask import Flask, Response\n" >> $filename
+        echo -en "from config import configuration\n" >> $filename
         echo -en "import models\n" >> $filename
         echo -en "from models import db\n" >> $filename
         echo -en "app = Flask(__name__)\n" >> $filename
-        echo -en "app.config['SQLALCHEMY_DATABASE_URI'] = models.DB_STRING\n" >> $filename
-        echo -en "app.config['SQLALCHEMY_ECHO'] = True\n" >> $filename
+        echo -en "app.config.update(configuration)\n" >> $filename
         echo -en "db.init_app(app)\n\n\n" >> $filename
         echo -en "@app.route('/')\ndef hello_world():\n    return 'Hello World ($filename)!'\n\n\n" >> $filename
         echo -en "if __name__ == '__main__':\n    app.debug = True\n    app.run(host='0.0.0.0', port=8000)\n" >> $filename
 
         echo -en "from flask import Flask\nfrom flask.ext.sqlalchemy import SQLAlchemy\n\n" > models.py
-        echo -en "DB_FILENAME = './test.db'\nDB_STRING = 'sqlite:///{}'.format(DB_FILENAME)\ndb = SQLAlchemy()\n\n\n" >> models.py
+        echo -en "db = SQLAlchemy()\n\n\n" >> models.py
         echo -en "class Test(db.Model):\n" >> models.py
         echo -en "    id = db.Column(db.Integer, primary_key=True)\n\n\n" >> models.py
         echo -en "if __name__ == '__main__':\n" >> models.py
         echo -en "    import os\n" >> models.py
+        echo -en "    from config import configuration, SQLITE_FILE\n" >> models.py
         echo -en "    try:\n" >> models.py
-        echo -en "        os.unlink(DB_FILENAME)\n" >> models.py
+        echo -en "        os.unlink(SQLITE_FILE)\n" >> models.py
         echo -en "    except FileNotFoundError:\n" >> models.py
         echo -en "        pass\n" >> models.py
         echo -en "    app = Flask(__name__)\n" >> models.py
-        echo -en "    app.config['SQLALCHEMY_ECHO'] = True\n" >> models.py
-        echo -en "    app.config['SQLALCHEMY_DATABASE_URI'] = DB_STRING\n" >> models.py
+        echo -en "    app.config.update(configuration)\n" >> models.py
         echo -en "    db.init_app(app)\n" >> models.py
         echo -en "    db.create_all(app=app)\n" >> models.py
 
         # sys.path.insert only needed if pythonpath not set (will be set in uwsgi.ini)
         echo -en "\n" > wsgi.py
-        #echo -en "import sys\n" >> wsgi.py
-        #echo -en "sys.path.insert(0, '"`pwd`"')\n\n" >> wsgi.py
+        echo -en "#import sys\n" >> wsgi.py
+        echo -en "#sys.path.insert(0, '"`pwd`"')\n\n" >> wsgi.py
         echo -en "from "${filename%.*}" import app as application\n" >> wsgi.py
+        echo -en "application.debug = True\n\n" >> wsgi.py
+        echo -en "# uncomment and modify, to mount app somewhere else than '/'\n" >> wsgi.py
+        echo -en "#from werkzeug.wsgi import DispatcherMiddleware\n" >> wsgi.py
+        echo -en "#from werkzeug.exceptions import NotFound\n\n" >> wsgi.py
+        echo -en "#application = DispatcherMiddleware(NotFound, {\n" >> wsgi.py
+        echo -en "#    '/"${filename%.*}"': application,\n" >> wsgi.py
+        echo -en "#})\n" >> wsgi.py
 
         uwsgipid="/tmp/flask-"${filename%.*}".pid"
         uwsgisock="/tmp/flask-"${filename%.*}".sock"
@@ -126,5 +133,14 @@ case $type in
         echo -en "stop = "$uwsgipid"\n\n" >> uwsgi.ini
         echo -en "[reload]\n" >> uwsgi.ini
         echo -en "reload = "$uwsgipid"\n" >> uwsgi.ini
+
+        echo -en "" > config.py
+        echo -en "SQLITE_FILE = './"${filename%.*}".sqlite'\n\n" >> config.py
+        echo -en "configuration = {\n" >> config.py
+        echo -en "    'SQLALCHEMY_DATABASE_URI': 'sqlite:///{}'.format(SQLITE_FILE),\n" >> config.py
+        echo -en "    'SQLALCHEMY_ECHO': True,  # for debugging\n" >> config.py
+        echo -en "#    '': '',\n" >> config.py
+        echo -en "}\n" >> config.py
+
 
 esac
