@@ -96,7 +96,8 @@ case $type in
         echo -en "    app = Flask(__name__)\n" >> models.py
         echo -en "    app.config.update(configuration)\n" >> models.py
         echo -en "    db.init_app(app)\n" >> models.py
-        echo -en "    db.create_all(app=app)\n" >> models.py
+        echo -en "    with app.app_context():\n" >> models.py
+        echo -en "        db.create_all()\n" >> models.py
 
         # sys.path.insert only needed if pythonpath not set (will be set in uwsgi.ini)
         echo -en "\n" > wsgi.py
