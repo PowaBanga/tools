@@ -41,8 +41,8 @@ def get_pep8_errors(filename, **pep8_options):
 class Pep8Plugin(geany.Plugin):
 
     __plugin_name__ = "PEP-8 Support"
-    __plugin_description__ = ("bla")
-    __plugin_version__ = "0.01"
+    __plugin_description__ = "Highlights PEP-8 errors in python files."
+    __plugin_version__ = "0.2"
     __plugin_author__ = "Nitori Kawashiro <nitori@cock.li>"
 
     def __init__(self):
@@ -55,15 +55,18 @@ class Pep8Plugin(geany.Plugin):
         pass
 
     def check_pep8_errors(self, sigman, doc):
-        results = get_pep8_errors(doc.file_name)
-        doc.editor.indicator_clear(geany.editor.INDICATOR_ERROR)
-        geany.msgwindow.clear_tab(geany.msgwindow.TAB_MESSAGE)
-        if results:
-            geany.msgwindow.switch_tab(geany.msgwindow.TAB_MESSAGE)
-            for error in results:
-                error['filename'] = doc.file_name
-                geany.msgwindow.msg_add(
-                    self.error_format.format(**error),
-                    geany.msgwindow.COLOR_DARK_RED, error['line'], doc)
-                doc.editor.indicator_set_on_line(
-                    geany.editor.INDICATOR_ERROR, error['line']-1)
+        if doc.file_name.endswith('.py'):
+            results = get_pep8_errors(doc.file_name)
+            doc.editor.indicator_clear(geany.editor.INDICATOR_ERROR)
+            geany.msgwindow.clear_tab(geany.msgwindow.TAB_MESSAGE)
+            if results:
+                geany.msgwindow.switch_tab(geany.msgwindow.TAB_MESSAGE)
+                for error in results:
+                    error['filename'] = doc.file_name
+                    geany.msgwindow.msg_add(
+                        self.error_format.format(**error),
+                        geany.msgwindow.COLOR_DARK_RED, error['line'], doc)
+                    doc.editor.indicator_set_on_line(
+                        geany.editor.INDICATOR_ERROR, error['line']-1)
+            else:
+                geany.msgwindow.switch_tab(geany.msgwindow.TAB_STATUS)
