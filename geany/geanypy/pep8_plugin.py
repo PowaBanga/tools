@@ -1,6 +1,5 @@
 
 import geany
-import sys
 import pep8
 
 
