@@ -50,7 +50,8 @@ def str2timedelta(text):
 
 def timedelta2str(td, frac_length=2):
     """Converts a timedelta object back to an .ass formatted timestamp"""
-
+    if td < timedelta(0):
+        return '00:00:00.{}'.format('0'*frac_length)
     text = str(td)
     if '.' in text:
         hhmmss, uu = text.split('.', 1)
@@ -222,7 +223,8 @@ class AssFile():
             if isinstance(event, AssDialogue):
                 output += 'Dialogue: {}\n'.format(','.join(map(self._str, event)))
             elif isinstance(event, AssComment):
-                output += 'Comment: {}\n'.format(','.join(map(self._str, event)))
+                if not self.options.get('no-comments', False):
+                    output += 'Comment: {}\n'.format(','.join(map(self._str, event)))
             elif isinstance(event, PlainComment):
                 for line in event.Text.splitlines():
                     output += '; {}\n'.format(line.rstrip())
@@ -329,6 +331,8 @@ if __name__ == "__main__":
             global_options['add-merge-comments'] = True
         elif param in ('--title'):
             global_options['title'] = sys.argv.pop(0)
+        elif param in ('--no-comments'):
+            global_options['no-comments'] = True
         else:
             globalless_args.append(param)
 
