@@ -41,7 +41,7 @@ def privmsg(word, word_eol, userdata, attributes):
         if _type == 'set':
             hexchat.emit_print(
                 "Channel Modes", channel, args[6:],
-                time=bufftimes)
+                time=bufftime)
         elif _type == 'joined':
             hexchat.emit_print(
                 "Join", nick, channel, host,
