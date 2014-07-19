@@ -53,52 +53,6 @@ def safe_to_send(text):
     return re.sub(r'[\u0000-\u001f]+', ' ', text).strip()
 
 
-def get_youtube_string():
-    '''
-        determines the current youtube video played. Only works in
-        chrome/chromium and only if the browser is stared with
-        the argument "--remote-debugging-port=9221"
-
-        it's certainly not the best idea, but it works. You probably shouldn't
-        use this without a firewall.
-    '''
-    try:
-        h = http.client.HTTPConnection('localhost:9221', timeout=2)
-        h.request('GET', '/json')
-        r = h.getresponse()
-        body = r.read()
-        data = json.loads(body.decode('ascii'))
-    except:
-        return None
-
-    for tab in data:
-        if tab['url'].startswith('http://www.youtube.com/') or \
-                tab['url'].startswith('https://www.youtube.com/'):
-            if tab['title'].startswith('▶ '):
-                up = urlparse(tab['url'])
-                params = up.query.split('&')
-                yurl = None
-                for param in params:
-                    name, _, value = param.partition('=')
-                    name = name.strip()
-                    value = value.strip()
-                    if name == 'v' and value != '':
-                        yurl = 'youtu.be/{}'.format(value)
-
-                tabtitle = tab['title'][2:]
-                if tabtitle.endswith(' - YouTube'):
-                    tabtitle = tabtitle[:-10]
-
-                tabtitle = safe_to_send(unescape_entities(tabtitle))
-
-                if yurl is not None:
-                    return '{0} ({1})'.format(tabtitle, yurl)
-                else:
-                    return '{0}'.format(tabtitle)
-
-    return None
-
-
 def get_mplayer_string():
     '''
         gets the current title played in mplayer or gnome-mplayer
@@ -234,9 +188,6 @@ def np(word, word_eol, userdata):
 
     if metastr is None:
         metastr = get_mplayer_string()
-
-    if metastr is None:
-        metastr = get_youtube_string()
 
     if metastr is None:
         hexchat.prnt('Es wird zur zeit nichts abgespielt.')
