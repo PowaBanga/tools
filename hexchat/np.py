@@ -104,33 +104,62 @@ def get_mplayer_string():
         gets the current title played in mplayer or gnome-mplayer
         using the cheap method of reading it from the `ps` command.
     '''
+    ret = None
+    player_found = None
+
     try:
-        ret = subprocess.check_output(['pidof', 'mplayer'])
+        ret = subprocess.check_output(['pidof', 'mpv'])
+        player_found = 'mpv'
     except subprocess.CalledProcessError:
+        pass
+
+    if ret is None:
+        try:
+            ret = subprocess.check_output(['pidof', 'smplayer'])
+            player_found = 'smplayer'
+        except subprocess.CalledProcessError:
+            pass
+
+    if ret is None:
         try:
             ret = subprocess.check_output(['pidof', 'gnome-mplayer'])
+            player_found = 'gnome-mplayer'
         except subprocess.CalledProcessError:
-            return None
+            pass
+
+    # smplayer (or other) might invoke the mplayer. so mplayer is last
+    if ret is None:
+        try:
+            ret = subprocess.check_output(['pidof', 'mplayer'])
+            player_found = 'mplayer'
+        except subprocess.CalledProcessError:
+            pass
+
+    if ret is None:
+        return
 
     try:
         mplayer_pid = int(ret.strip())
-    except:
-        return None
+    except (ValueError, TypeError):
+        return
 
-    try:
-        ret = subprocess.check_output(['ps', 'h', '-o', 'cmd',
-                                       str(mplayer_pid)])
-    except subprocess.CalledProcessError:
-        return None
+    with open('/proc/{}/cmdline'.format(mplayer_pid), 'rb') as f:
+        ret = f.read()
 
-    mplayer_string = os.path.basename(
-        ret.partition(b' ')[2].decode('utf-8', 'replace')).strip()
+    cmdargs = ret.split(b'\x00')
+    cmdargs = [arg for arg in cmdargs if arg]
+
+    # assuming the path is the *last* argument
+    filepath = cmdargs[-1]
+
+    # and assuming utf-8 (might want to check the locale or something)
+    mplayer_string = os.path.basename(filepath.decode('utf-8', 'replace')).strip()
     mplayer_string = mplayer_string.replace('_', ' ')
     filename, _, ext = mplayer_string.rpartition('.')
     if len(ext) <= 5:
         mplayer_string = filename
     if mplayer_string != '':
-        return mplayer_string + ' (mplayer)'
+        return mplayer_string + ' ({})'.format(player_found)
 
 
 def get_mpd_string():
