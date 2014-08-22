@@ -97,6 +97,7 @@ def putback(word, word_eol, userdata):
 
     text = word_eol[1].strip()
     hexchat.command('say {}◡ﾉ(° -°ﾉ) sry..'.format(text))
+    return hexchat.EAT_HEXCHAT
 
 
 hexchat.hook_command('FLIP', flip)
