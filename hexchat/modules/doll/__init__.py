@@ -1,162 +1,173 @@
 
-from itertools import zip_longest
-import functools
+import re
+import string
 import inspect
+import datetime
 
-from .validators import Numeric, Optional, ValidationError, PassException
 
 import hexchat
 
-
-def ucc_to_lower(text, separator='_'):
-    """UpperCamelCase to upper_camel_case"""
-    output = text[0].lower()
-    for char in text[1:]:
-        if char == char.upper():
-            output += separator + char.lower()
-        else:
-            output += char.lower()
-    return output
-
-
-def setup_command(prefix='!', separator='-'):
-    """Generate a new class with base `Command`"""
-    return type(
-        'CommandBase',
-        (Command,),
-        dict(_prefix=prefix, _separator=separator))
-
-
-class Command:
-
-    _prefix = None
-    _separator = None
-
-    def __new__(cls, *args, **kwargs):
-        # generate command name
-        cls._command_name = ucc_to_lower(cls.__name__, cls._separator)
-        cls._command = cls._prefix + cls._command_name
-        obj = super().__new__(cls)
-
-        obj._error_handler = None
-        obj._fields = []
-        for key, field in cls.__dict__.items():
-            if not key.startswith('_'):
-                if isinstance(field, Field):
-                    obj.add_field((key, field))
-
-        return obj
-
-    def add_field(self, field):
-        self._fields.append(field)
-
-    def _callback(self, word, word_eol, userdata):
-
-        text = word_eol[3][1:]
-        words = text.split()
-        if not words or words[0].lower() != self._command:
-            return
-
-        args = words[1:]
-        success = True
-        values = []
-
-        # take the values from IRC, validate and convert them
-        for value, (name, field) \
-                in zip_longest(args, self._fields, fillvalue=""):
-            try:
-                field.validate(value)
-                values.append(field.convert(value))
-            except PassException as e:
-                values.append(None)
-            except ValidationError as e:
-                success = False
-                if self._error_handler is not None:
-                    self._error_handler(e)
-                    return
-                else:
-                    raise
-            except ConversionError as e:
-                success = False
-                if self._error_handler is not None:
-                    self._error_handler(e)
-                    return
-                else:
-                    raise
-
-        if success:
-            return self._func(*values, userdata=userdata)
-
-    def __call__(self, func):
-        self._func = func
-        self._func_args = inspect.getargspec(func)
-
-        arg_set = set(self._func_args.args)
-
-        # check if function signature matches fields
-        for name, field in self._fields:
-            if name in arg_set:
-                arg_set.remove(name)
-            else:
-                raise TypeError(
-                    "Argument {!r} not in signature of function {!r}".format(
-                        name, self._func))
-
-        # the order of the function signature determines the orden, in
-        # which the arguments are expected from the IRC command
-        sort_dict = {v: i for i, v in enumerate(self._func_args.args)}
-        self._fields.sort(key=lambda e: sort_dict[e[0]])
-
-        self._hook = hexchat.hook_server('PRIVMSG', self._callback)
-        return func
-
-    def error_handler(self, func):
-        self._error_handler = func
-        return func
-
-
-# Field and types
 
 class ConversionError(Exception):
     pass
 
 
-class Field:
+class ValidationError(Exception):
+    pass
 
-    def __init__(self, _type, validators=None):
-        if validators is None:
-            validators = []
 
-        if isinstance(_type, type):
-            _type = _type()
-        self._type = _type
-        self.validators = list(validators)
-        self.validators.extend(list(_type.validators))
+def slug_command(text):
+    output = text[0].lower()
+    for char in text[1:]:
+        if char == char.upper():
+            output += '-' + char.lower()
+        else:
+            output += char.lower()
+    output = re.sub(r'[^a-z0-9]+', '-', output).strip('-')
+    return output
 
-    def validate(self, value):
-        for validator in self.validators:
-            if isinstance(validator, type):
-                validator = validator()
-            validator.validate(value)
 
-    def convert(self, value):
-        return self._type.convert(value)
+def prefixed(prefix):
+    return Command(prefix)
+
+
+class Command:
+
+    def __init__(self, prefix):
+        self._prefix = prefix
+        self._commands = {}
+
+    def _get_handle_mapping(self, func):
+        cmd_name = slug_command(func.__name__)
+        cmd = self._prefix + cmd_name
+
+        if cmd not in self._commands:
+            self._commands[cmd] = {
+                'func': None,
+                'error_handler': None,
+                'func_args': None,
+            }
+        return self._commands[cmd]
+
+    def _callback(self, word, word_eol, userdata):
+        text = word_eol[3][1:]
+        words = text.split()
+        if not words:
+            return
+
+        for command, handlers in self._commands.items():
+            if words[0].lower() == command:
+                try:
+                    self._handle_command(words[1:], handlers)
+                except ValidationError as exception:
+                    if handlers['error_handler'] is not None:
+                        handlers['error_handler'](exception)
+                except ConversionError as exception:
+                    if handlers['error_handler'] is not None:
+                        handlers['error_handler'](exception)
+
+    def _handle_command(self, args, handlers):
+        """Handle one command. get the specified arguments,
+        validate and convert them"""
+        func = handlers['func']
+        func_args = handlers['func_args'].args
+        func_defaults = handlers['func_args'].defaults
+
+        if func_args is None:
+            func_args = []
+
+        if func_defaults is None:
+            func_defaults = []
+
+        minimum, maximum = \
+            len(func_args) - len(func_defaults), len(func_args)
+
+        if minimum <= len(args) <= maximum:
+            annotations = handlers['func_args'].annotations
+
+            final_arguments = []
+            failed = False
+
+            for field, value in zip(func_args, args):
+                if field in annotations:
+                    converter = annotations[field]
+                    if isinstance(converter, type):
+                        converter = converter()
+
+                    try:
+                        value = converter.convert(
+                            value, *converter.args, **converter.kwargs)
+                    except Exception as e:
+                        raise ConversionError(e)
+
+                final_arguments.append(value)
+            func(*final_arguments)
+        else:
+            raise ValidationError(
+                'got {} arguments expected {}'.format(
+                    len(args),
+                    minimum if minimum == maximum else '{}-{}'
+                    .format(minimum, maximum)))
+
+    def __call__(self, func):
+        cmd = self._get_handle_mapping(func)
+        cmd['func'] = func
+        cmd['func_args'] = inspect.getfullargspec(func)
+        hexchat.hook_server('PRIVMSG', self._callback)
+        return func
+
+    def error_handler(self, func):
+        cmd = self._get_handle_mapping(func)
+        cmd['error_handler'] = func
+        return func
 
 
 class BaseType:
-    validators = None
 
-    def __new__(cls, *args, **kwargs):
-        if cls.validators is None:
-            cls.validators = []
-        return super().__new__(cls)
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
 
-    def convert(self, value):
-        raise NotImplementedError("convert is not implented.")
+    def convert(self, value, *args, **kwargs):
+        return value
 
 
 class Integer(BaseType):
-    validators = [Numeric]
 
     def convert(self, value):
         return int(value)
+
+
+class Date(BaseType):
+    def convert(self, value, date_format=None):
+        if date_format is None:
+            date_format = r'^(?P<year>(?:\d{2}|\d{4}))-'\
+                '(?P<month>\d{1,2})-(?P<day>\d{1,2})$'
+        if isinstance(date_format, str):
+            date_format = re.compile(date_format)
+
+        m = date_format.match(value)
+        if m is None:
+            raise ValueError('{!r} is not a valid date.'.format(value))
+
+        return datetime.date(
+            int(m.group('year')),
+            int(m.group('month')),
+            int(m.group('day'))
+        )
+
+
+class String(BaseType):
+    def convert(self, value, minlen=None, maxlen=None):
+        if minlen is not None:
+            if len(value) < minlen:
+                raise ValueError('{!r} is too short.'.format(value))
+        if maxlen is not None:
+            if len(value) > maxlen:
+                raise ValueError('{!r} is too long.'.format(value))
+        return value
+
+
+class Time(BaseType):
+    def convert(self, value):
+        pass
