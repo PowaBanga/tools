@@ -138,6 +138,17 @@ class Integer(BaseType):
         return int(value)
 
 
+class String(BaseType):
+    def convert(self, value, minlen=None, maxlen=None):
+        if minlen is not None:
+            if len(value) < minlen:
+                raise ValueError('{!r} is too short.'.format(value))
+        if maxlen is not None:
+            if len(value) > maxlen:
+                raise ValueError('{!r} is too long.'.format(value))
+        return value
+
+
 class Date(BaseType):
     def convert(self, value, date_format=None):
         if date_format is None:
@@ -157,17 +168,34 @@ class Date(BaseType):
         )
 
 
-class String(BaseType):
-    def convert(self, value, minlen=None, maxlen=None):
-        if minlen is not None:
-            if len(value) < minlen:
-                raise ValueError('{!r} is too short.'.format(value))
-        if maxlen is not None:
-            if len(value) > maxlen:
-                raise ValueError('{!r} is too long.'.format(value))
-        return value
-
-
 class Time(BaseType):
-    def convert(self, value):
-        pass
+    def convert(self, value, time_format=None):
+
+        if not value:
+            raise ValueError('Time is missing.')
+
+        if time_format is None:
+            time_format = \
+                r'^'\
+                '(?:(?P<hour>\d+))?'\
+                '(?::(?P<minute>\d{1,2}))?'\
+                '(?::(?P<second>\d{1,2}))?'\
+                '(?:.(?P<micro_second>\d{1,6}))?'\
+                '$'
+        if isinstance(time_format, str):
+            time_format = re.compile(time_format)
+
+        m = time_format.match(value)
+        if m is None:
+            raise ValueError('{!r} is not a valid time.'.format(value))
+
+        hour = int(m.group('hour')) \
+            if m.group('hour') is not None else 0
+        minute = int(m.group('minute')) \
+            if m.group('minute') is not None else 0
+        second = int(m.group('second')) \
+            if m.group('second') is not None else 0
+        micro_second = int(m.group('micro_second')) \
+            if m.group('micro_second') is not None else 0
+
+        return datetime.time(hour, minute, second, micro_second)
