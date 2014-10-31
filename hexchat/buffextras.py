@@ -35,31 +35,34 @@ def privmsg(word, word_eol, userdata, attrs):
         _type = word[4]
         args = word_eol[5] if word[5:] else ''
 
-        nick, user, host = split_prefix(prefix)
+        if '!' in prefix:
+            nick, userhost = prefix.split('!')
+        else:
+            nick, userhost = prefix, None
 
         if _type == 'set':
             send("Channel Modes", channel, args[6:])
         elif _type == 'joined':
-            send("Join", nick, channel, user + "@" + host)
+            send("Join", nick, channel, userhost)
         elif _type == 'parted':
             if args.startswith('with message: ['):
-                send("Part with Reason", nick, user + "@" + host, channel,
-                                   args[15:-1])
+                send("Part with Reason", nick, userhost, channel,
+                     args[15:-1])
             else:
-                send("Part", nick, user + "@" + host, channel)
+                send("Part", nick, userhost, channel)
         elif _type == 'is':
             send("Change Nick", nick, args[13:])
         elif _type == 'quit':
-            send("Quit", nick, args[15:-1], user + "@" + host)
+            send("Quit", nick, args[15:-1], userhost)
         elif _type == 'kicked':
             send("Kick", nick, word[5], channel,
-                               word_eol[6][9:-1])
+                 word_eol[6][9:-1])
         elif _type == 'changed':
             send("Topic Change", nick, args[14:], channel)
         else:
             send("Server Error", "Unhandled *buffextras event:")
             send("Server Error",
-                               "    {}".format(word_eol[3][1:]))
+                 "    {}".format(word_eol[3][1:]))
         return hexchat.EAT_HEXCHAT
 
     return hexchat.EAT_NONE
