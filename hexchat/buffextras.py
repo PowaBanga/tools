@@ -12,10 +12,9 @@ import hexchat
 hexchat.emit_print("Generic Message", "Loading", "{} {} - {}".format(
                    __module_name__, __module_version__,
                    __module_description__))
-import time
 
 
-def privmsg(word, word_eol, userdata, attributes):
+def privmsg(word, word_eol, userdata):
 
     bprefix = word[0]
     if bprefix[0:1] != ':':
@@ -26,11 +25,6 @@ def privmsg(word, word_eol, userdata, attributes):
 
     if bnick == '*buffextras':
 
-        if attributes.time:
-            bufftime = attributes.time
-        else:
-            bufftime = int(time.time())
-
         channel = word[2]
         prefix = word[3][1:]
         _type = word[4]
@@ -39,49 +33,28 @@ def privmsg(word, word_eol, userdata, attributes):
         nick, user, host = split_prefix(prefix)
 
         if _type == 'set':
-            hexchat.emit_print(
-                "Channel Modes", channel, args[6:],
-                time=bufftime)
+            hexchat.emit_print("Channel Modes", channel, args[6:])
         elif _type == 'joined':
-            hexchat.emit_print(
-                "Join", nick, channel, host,
-                time=bufftime)
+            hexchat.emit_print("Join", nick, channel, host)
         elif _type == 'parted':
             if args.startswith('with message: ['):
-                hexchat.emit_print(
-                    "Part with Reason", nick, host, channel, args[15:-1],
-                    time=bufftime)
+                hexchat.emit_print("Part with Reason", nick, host, channel,
+                                   args[15:-1])
             else:
-                hexchat.emit_print(
-                    "Part", nick, host, channel,
-                    time=bufftime)
+                hexchat.emit_print("Part", nick, host, channel)
         elif _type == 'is':
-            hexchat.emit_print(
-                "Change Nick", nick, args[13:],
-                time=bufftime)
+            hexchat.emit_print("Change Nick", nick, args[13:])
         elif _type == 'quit':
-            hexchat.emit_print(
-                "Quit", nick, args[15:-1], host,
-                time=bufftime)
+            hexchat.emit_print("Quit", nick, args[15:-1], host)
         elif _type == 'kicked':
-            hexchat.emit_print(
-                "Kick", nick, word[5],
-                channel, word_eol[6][9:-1],
-                time=bufftime)
+            hexchat.emit_print("Kick", nick, word[5], channel,
+                               word_eol[6][9:-1])
         elif _type == 'changed':
-            hexchat.emit_print(
-                "Topic Change", nick,
-                args[14:], channel,
-                time=bufftime)
+            hexchat.emit_print("Topic Change", nick, args[14:], channel)
         else:
-            hexchat.emit_print(
-                "Server Error",
-                "Unhandled *buffextras event:",
-                time=bufftime)
-            hexchat.emit_print(
-                "Server Error",
-                "    {}".format(word_eol[3][1:]),
-                time=bufftime)
+            hexchat.emit_print("Server Error", "Unhandled *buffextras event:")
+            hexchat.emit_print("Server Error",
+                               "    {}".format(word_eol[3][1:]))
         return hexchat.EAT_HEXCHAT
 
     return hexchat.EAT_NONE
@@ -100,4 +73,4 @@ def split_prefix(prefix):
     return (nick, user, host)
 
 
-hexchat.hook_server_attrs('PRIVMSG', privmsg)
+hexchat.hook_server('PRIVMSG', privmsg)
