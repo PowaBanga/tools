@@ -37,8 +37,7 @@ class Command:
         self._prefix = prefix
         self._commands = {}
 
-    def _get_handle_mapping(self, func):
-        cmd_name = slug_command(func.__name__)
+    def _get_handle_mapping(self, cmd_name):
         cmd = self._prefix + cmd_name
 
         if cmd not in self._commands:
@@ -110,14 +109,14 @@ class Command:
                     .format(minimum, maximum)))
 
     def __call__(self, func):
-        cmd = self._get_handle_mapping(func)
+        cmd = self._get_handle_mapping(slug_command(func.__name__))
         cmd['func'] = func
         cmd['func_args'] = inspect.getfullargspec(func)
         hexchat.hook_server('PRIVMSG', self._callback)
         return func
 
     def error_handler(self, func):
-        cmd = self._get_handle_mapping(func)
+        cmd = self._get_handle_mapping(slug_command(func.__name__))
         cmd['error_handler'] = func
         return func
 
