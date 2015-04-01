@@ -6,6 +6,7 @@ import string
 import random
 random = random.SystemRandom()
 import re
+import os
 import pipes
 import time
 import subprocess
@@ -136,6 +137,31 @@ def google_hook(ctx, pline, userdata):
         userdata['locked_until'] = time.time() + 5
         param = ' '.join(args)
         hook_process(['im-feeling-lucky.py', param], _google_process_cb)
+
+
+@hook_irc_command('+?')
+def inc_ask(ctx, pline, userdata):
+    fn = '~/.weechat/python/data/' + ctx.server + '_' + ctx.channel + '.txt'
+    fn = os.path.expanduser(fn)
+    count = 0
+    if os.path.exists(fn):
+        with open(fn, 'r') as fp:
+            count = int(fp.read().strip())
+    ctx.command(u'/say = {}'.format(count))
+
+
+@hook_irc_command('+1')
+def inc_one(ctx, pline, userdata):
+    fn = '~/.weechat/python/data/' + ctx.server + '_' + ctx.channel + '.txt'
+    fn = os.path.expanduser(fn)
+    count = 0
+    if os.path.exists(fn):
+        with open(fn, 'r') as fp:
+            count = int(fp.read().strip())
+    count += 1
+    ctx.command(u'/say +{}'.format(count))
+    with open(fn, 'w') as fp:
+        fp.write(str(count))
 
 
 @hook_irc_command('+flipcoin')
