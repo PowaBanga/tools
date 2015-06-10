@@ -97,6 +97,45 @@ google_data = {'locked_until': 0}
 yuri_data = {'locked_until': 0}
 
 
+time_pattern = re.compile(r'^(?:(?P<h>\d+)[hH])?(?:(?P<m>\d+)[mM])?(?:(?P<s>\d+)[sS]?)?$')
+def to_seconds(time_string):
+    seconds = 0
+    match = time_pattern.match(time_string)
+    if match is None:
+        return
+    hour = match.group('h')
+    minute = match.group('m')
+    second = match.group('s')
+    seconds = int(second) if second else 0
+    seconds += int(minute)*60 if minute else 0
+    seconds += int(hour)*3600 if hour else 0
+    return seconds
+
+
+
+@hook_irc_command('+timer')
+def timer_hook(ctx, pline, userdata):
+    caller = pline.prefix.nick
+    args = pline.trailing.split(None, 2)
+    usage = '/notice {} Invalid syntax: +timer <[ digits "h" ][ digits "m" ][ digits "s" ]> <message>'.format(caller)
+    
+    if len(args) < 3:
+        ctx.command(usage)
+        return
+
+    _, time_string, message = args
+    time_seconds = to_seconds(time_string)
+    if not time_seconds:
+        ctx.command(usage)
+        return
+
+    def _timer_cb(ud):
+        ctx.command('/say {}, I remind you of: {} ({} ago)'.format(caller, message, time_string))
+    
+    ctx.command('/notice {}, timer set to {} seconds ({})'.format(caller, time_seconds, time_string))
+    hook_timer(time_seconds, _timer_cb)
+
+
 @hook_irc_command('+yuri', userdata=yuri_data)
 def yuri_hook(ctx, pline, userdata):
     if time.time() < userdata['locked_until']:
