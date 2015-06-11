@@ -21,6 +21,8 @@ import weechat_utils
 from weechat_utils import hook_signal, hook_irc_command, color
 from weechat_utils import infolist_get, hook_timer, hook_process
 
+from other_utils import to_seconds, seconds_to_string
+
 # index of nyaa_list
 last_nyaas = []
 last_nyaa_users = []
@@ -97,22 +99,6 @@ google_data = {'locked_until': 0}
 yuri_data = {'locked_until': 0}
 
 
-time_pattern = re.compile(r'^(?:(?P<h>\d+)[hH])?(?:(?P<m>\d+)[mM])?(?:(?P<s>\d+)[sS]?)?$')
-def to_seconds(time_string):
-    seconds = 0
-    match = time_pattern.match(time_string)
-    if match is None:
-        return
-    hour = match.group('h')
-    minute = match.group('m')
-    second = match.group('s')
-    seconds = int(second) if second else 0
-    seconds += int(minute)*60 if minute else 0
-    seconds += int(hour)*3600 if hour else 0
-    return seconds
-
-
-
 @hook_irc_command('+timer')
 def timer_hook(ctx, pline, userdata):
     caller = pline.prefix.nick
@@ -128,11 +114,15 @@ def timer_hook(ctx, pline, userdata):
     if not time_seconds:
         ctx.command(usage)
         return
+    
+    if time_seconds > 2147483:
+        ctx.command('/notice {} Too large, maximum is 2147483 seconds or {}'.format(caller, seconds_to_string(2147483)))
+        return
 
     def _timer_cb(ud):
-        ctx.command('/say {}, I remind you of: {} ({} ago)'.format(caller, message, time_string))
+        ctx.command('/say {}, I remind you of: {} ({} ago)'.format(caller, message, seconds_to_string(time_seconds)))
     
-    ctx.command('/notice {}, timer set to {} seconds ({})'.format(caller, time_seconds, time_string))
+    ctx.command('/notice {} timer set to {} seconds ({})'.format(caller, time_seconds, seconds_to_string(time_seconds)))
     hook_timer(time_seconds, _timer_cb)
 
 
