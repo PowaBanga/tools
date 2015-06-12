@@ -21,7 +21,7 @@ import weechat_utils
 from weechat_utils import hook_signal, hook_irc_command, color
 from weechat_utils import infolist_get, hook_timer, hook_process
 
-from other_utils import to_seconds, seconds_to_string
+from other_utils import to_seconds, seconds_to_string, simple_tobytes
 
 # index of nyaa_list
 last_nyaas = []
@@ -107,7 +107,7 @@ def load_timers():
             timer_data = json.load(fp)
         except:
             timer_data = {'timers': [], 'next': 1}
-    return timer_data
+    return simple_tobytes(timer_data)
 
 
 def save_timers(timer_data):

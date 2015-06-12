@@ -43,6 +43,16 @@ def to_seconds(time_string):
     return seconds
 
 
+def simple_tobytes(data, enc='utf-8'):
+    if isinstance(data, dict):
+        return {k.encode(enc): simple_tobytes(v, enc) for k, v in data.iteritems()}
+    if isinstance(data, list):
+        return [simple_tobytes(v, enc) for v in data]
+    if isinstance(data, unicode):
+        return data.encode(enc)
+    return data
+
+
 if __name__ == '__main__':
     x = to_seconds('7d')
     print(seconds_to_string(x))
