@@ -98,12 +98,81 @@ url_fetch_data = {
 google_data = {'locked_until': 0}
 yuri_data = {'locked_until': 0}
 
+timer_filename = os.path.expanduser('~/.weechat/python/data/_timerdata.txt')
+
+
+def load_timers():
+    with open(timer_filename, 'r') as fp:
+        try:
+            timer_data = json.load(fp)
+        except:
+            timer_data = {'timers': [], 'next': 1}
+    return timer_data
+
+
+def save_timers(timer_data):
+    with open(timer_filename, 'w') as fp:
+        json.dump(timer_data, fp)
+
+
+def add_timer(time_seconds, userdata):
+    now = int(time.time())
+    timer_data = load_timers()
+    _ud = {k: v for k, v in userdata.items()}
+
+    tid = timer_data['next']
+    timer_data['next'] += 1
+    ctx = _ud['ctx']
+    _ud['ctx'] = {'server': ctx.server, 'channel': ctx.channel}
+    timer_data['timers'].append(dict(
+        tid=tid,
+        when=now+time_seconds,
+        time_seconds=time_seconds,
+        userdata=_ud,
+    ))
+    save_timers(timer_data)
+    return tid
+
+
+def remove_timer(tid):
+    timer_data = load_timers()
+    oldlen = len(timer_data['timers'])
+    timer_data['timers'] = [t for t in timer_data['timers']
+                            if t['tid'] != tid]
+    save_timers(timer_data)
+    return oldlen > len(timer_data['timers'])
+
+
+def cmd_timer_callback(userdata):
+    """Callback for +timer command."""
+    remove_timer(userdata['tid'])
+    userdata['ctx'].command('/say {}, I remind you of: {} ({} ago)'.format(
+        userdata['caller'], userdata['message'],
+        seconds_to_string(userdata['time_seconds'])))
+
+
+# loading existing timers from file
+if not os.path.exists(timer_filename):
+    with open(timer_filename, 'w') as fp:
+        json.dump({'timers': [], 'next': 1}, fp)
+
+for timer in load_timers()['timers']:
+    now = int(time.time())
+    _ud = timer['userdata']
+    fake_context = weechat_utils.Context(_ud['ctx']['server'],
+                                         _ud['ctx']['channel'])
+    _ud['ctx'] = fake_context
+    _ud['time_seconds'] = timer['time_seconds']
+    _ud['tid'] = timer['tid']
+    hook_timer(max(1, timer['when'] - now), cmd_timer_callback, _ud)
+
 
 @hook_irc_command('+timer')
 def timer_hook(ctx, pline, userdata):
     caller = pline.prefix.nick
     args = pline.trailing.split(None, 2)
-    usage = '/notice {} Invalid syntax: +timer <[ digits "h" ][ digits "m" ][ digits "s" ]> <message>'.format(caller)
+    usage = '/notice {} Invalid syntax: +timer <[ digits "h" ]' \
+            '[ digits "m" ][ digits "s" ]> <message>'.format(caller)
     
     if len(args) < 3:
         ctx.command(usage)
@@ -116,14 +185,35 @@ def timer_hook(ctx, pline, userdata):
         return
     
     if time_seconds > 2147483:
-        ctx.command('/notice {} Too large, maximum is 2147483 seconds or {}'.format(caller, seconds_to_string(2147483)))
+        ctx.command('/notice {} Too large, maximum is 2147483 seconds or {}'
+                    .format(caller, seconds_to_string(2147483)))
         return
 
-    def _timer_cb(ud):
-        ctx.command('/say {}, I remind you of: {} ({} ago)'.format(caller, message, seconds_to_string(time_seconds)))
-    
-    ctx.command('/notice {} timer set to {} seconds ({})'.format(caller, time_seconds, seconds_to_string(time_seconds)))
-    hook_timer(time_seconds, _timer_cb)
+    ctx.command('/notice {} timer set to {} seconds ({})'.format(
+        caller, time_seconds, seconds_to_string(time_seconds)))
+
+    _userdata = dict(
+        ctx=ctx,
+        caller=caller,
+        message=message,
+        time_seconds=time_seconds
+    )
+    tid = add_timer(time_seconds, _userdata)
+    _userdata['tid'] = tid
+    hook_timer(time_seconds, cmd_timer_callback, _userdata)
+
+
+@hook_irc_command('+deltimer')
+def del_timer(ctx, pline, userdata):
+    caller = pline.prefix.nick
+    args = pline.trailing.split(None, 1)
+    if len(args) != 2:
+        ctx.command('/notice {} Timer ID missing.'.format(caller))
+        return
+    _, tid = args
+    result = remove_timer(tid)
+    if result:
+        ctx.command('/notice {} Timer removed')
 
 
 @hook_irc_command('+yuri', userdata=yuri_data)
@@ -140,7 +230,8 @@ def yuri_hook(ctx, pline, userdata):
             tag_string = u' '.join(u'[{}]'.format(tag) for tag in dyn[u'tags'])
             dyn[u'tag_string'] = tag_string
             ctx.command(
-                '/say \x02Your random yuri chapter |\x02 {title} \x02by\x02 {authors} | {link} | \x02{tag_string}\x02'
+                '/say \x02Your random yuri chapter |\x02 {title} \x02by\x02'
+                ' {authors} | {link} | \x02{tag_string}\x02'
                 .format(**dyn))
 
     userdata['locked_until'] = time.time() + 5
