@@ -203,19 +203,6 @@ def timer_hook(ctx, pline, userdata):
     hook_timer(time_seconds, cmd_timer_callback, _userdata)
 
 
-@hook_irc_command('+deltimer')
-def del_timer(ctx, pline, userdata):
-    caller = pline.prefix.nick
-    args = pline.trailing.split(None, 1)
-    if len(args) != 2:
-        ctx.command('/notice {} Timer ID missing.'.format(caller))
-        return
-    _, tid = args
-    result = remove_timer(tid)
-    if result:
-        ctx.command('/notice {} Timer removed')
-
-
 @hook_irc_command('+yuri', userdata=yuri_data)
 def yuri_hook(ctx, pline, userdata):
     if time.time() < userdata['locked_until']:

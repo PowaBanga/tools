@@ -135,10 +135,7 @@ def inject_func(func, func_name=None):
 
 def remove_func(func_name):
     import __main__
-    try:
-        delattr(__main__, func_name)
-    except AttributeError:
-        pass
+    delattr(__main__, func_name)
 
 
 def hook_timer(seconds, callback, userdata=None):
@@ -152,8 +149,12 @@ def hook_timer(seconds, callback, userdata=None):
     @functools.wraps(callback)
     def _hook_timer_helper(genfuncname, remaining_calls):
         # nonlocal callback, userdata, generated_func_name  # py2.7 duh!
-        remove_func(genfuncname)
-        result = callback(userdata)
+        try:
+            result = callback(userdata)
+        except:
+            raise
+        finally:
+            remove_func(genfuncname)
 
         if result is None:
             result = weechat.WEECHAT_RC_OK
@@ -179,9 +180,12 @@ def hook_process(args, callback, stdin=None, userdata=None):
         state['stderr'] += err
         if rc == weechat.WEECHAT_HOOK_PROCESS_RUNNING:
             return weechat.WEECHAT_RC_OK
-
-        remove_func(genfuncname)
-        result = callback(rc, state['stdout'], state['stderr'], userdata)
+        try:
+            result = callback(rc, state['stdout'], state['stderr'], userdata)
+        except:
+            raise
+        finally:
+            remove_func(genfuncname)
 
         if result is None:
             result = weechat.WEECHAT_RC_OK
