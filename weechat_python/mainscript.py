@@ -126,6 +126,7 @@ def add_timer(time_seconds, userdata):
     _ud['ctx'] = {'server': ctx.server, 'channel': ctx.channel}
     timer_data['timers'].append(dict(
         tid=tid,
+        hook=_ud['hook'],
         when=now+time_seconds,
         time_seconds=time_seconds,
         userdata=_ud,
@@ -134,18 +135,25 @@ def add_timer(time_seconds, userdata):
     return tid
 
 
-def remove_timer(tid):
+def remove_timer(tid, unhook=True):
     timer_data = load_timers()
-    oldlen = len(timer_data['timers'])
-    timer_data['timers'] = [t for t in timer_data['timers']
-                            if t['tid'] != tid]
+    new_timers = []
+    found = False
+    for timer in timer_data['timers']:
+        if timer['tid'] == tid:
+            found = True
+            if unhook:
+                weechat.unhook(timer['hook'])
+            continue
+        new_timers.append(timer)
+    timer_data['timers'] = new_timers
     save_timers(timer_data)
-    return oldlen > len(timer_data['timers'])
+    return found
 
 
 def cmd_timer_callback(userdata):
     """Callback for +timer command."""
-    remove_timer(userdata['tid'])
+    remove_timer(userdata['tid'], False)
     userdata['ctx'].command('/say {}, I remind you of: {} ({} ago)'.format(
         userdata['caller'], userdata['message'],
         seconds_to_string(userdata['time_seconds'])))
@@ -156,7 +164,8 @@ if not os.path.exists(timer_filename):
     with open(timer_filename, 'w') as fp:
         json.dump({'timers': [], 'next': 1}, fp)
 
-for timer in load_timers()['timers']:
+timer_data = load_timers()
+for timer in timer_data['timers']:
     now = int(time.time())
     _ud = timer['userdata']
     fake_context = weechat_utils.Context(_ud['ctx']['server'],
@@ -164,7 +173,8 @@ for timer in load_timers()['timers']:
     _ud['ctx'] = fake_context
     _ud['time_seconds'] = timer['time_seconds']
     _ud['tid'] = timer['tid']
-    hook_timer(max(1, timer['when'] - now), cmd_timer_callback, _ud)
+    hook = hook_timer(max(1, timer['when'] - now), cmd_timer_callback, _ud)
+    _ud['hook'] = hook
 
 
 @hook_irc_command('+timer')
@@ -189,18 +199,47 @@ def timer_hook(ctx, pline, userdata):
                     .format(caller, seconds_to_string(2147483)))
         return
 
-    ctx.command('/notice {} timer set to {} seconds ({})'.format(
-        caller, time_seconds, seconds_to_string(time_seconds)))
-
     _userdata = dict(
         ctx=ctx,
         caller=caller,
         message=message,
         time_seconds=time_seconds
     )
+    hook = hook_timer(time_seconds, cmd_timer_callback, _userdata)
+    _userdata['hook'] = hook
     tid = add_timer(time_seconds, _userdata)
     _userdata['tid'] = tid
-    hook_timer(time_seconds, cmd_timer_callback, _userdata)
+
+    ctx.command('/notice {} timer set to {} seconds ({}, Timer Id: {})'.format(
+        caller, time_seconds, seconds_to_string(time_seconds), tid))
+
+
+@hook_irc_command('+deltimer')
+def del_timer(ctx, pline, userdata):
+    caller = pline.prefix.nick
+    args = pline.trailing.split(None, 1)
+    if len(args) != 2:
+        ctx.command('/notice {} Timer ID missing.'.format(caller))
+        return
+    _, tid = args
+    try:
+        tid = int(tid)
+    except ValueError:
+        ctx.command('/notice {} Timer Id must be an integer.'.format(caller))
+        return
+    timer_data = load_timers()
+    for timer in timer_data['timers']:
+        ud = timer['userdata']
+        if timer['tid'] == tid:
+            if caller.lower() == ud['caller'].lower():
+                remove_timer(tid, unhook=True)
+                ctx.command('/notice {} Timer removed.'.format(caller))
+            else:
+                ctx.command('/notice {} This timer belongs to {}.'
+                            .format(caller, ud['caller']))
+            break
+    else:
+        ctx.command('/notice {} Timer not found.'.format(caller))
 
 
 @hook_irc_command('+yuri', userdata=yuri_data)
