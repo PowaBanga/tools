@@ -163,7 +163,7 @@ def hook_timer(seconds, callback, userdata=None):
     genfuncname = inject_func(_hook_timer_helper)
 
     # align_seconds/maxcalls won't be implemented for now.
-    weechat.hook_timer(int(seconds*1000), 0, 1, genfuncname, genfuncname)
+    return weechat.hook_timer(int(seconds*1000), 0, 1, genfuncname, genfuncname)
 
 
 def hook_process(args, callback, stdin=None, userdata=None):
@@ -194,7 +194,7 @@ def hook_process(args, callback, stdin=None, userdata=None):
     genfuncname = inject_func(_hook_process_helper)
 
     cmd = ' '.join(pipes.quote(arg) for arg in args)
-    weechat.hook_process(cmd, 30*1000, genfuncname, genfuncname)
+    return weechat.hook_process(cmd, 30*1000, genfuncname, genfuncname)
 
 
 def gen_infolist_get(infolist_name, arguments, pointer=""):
