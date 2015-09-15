@@ -43,7 +43,10 @@ def main(term):
             if word:
                 read_parts.append(word)
             if reading:
-                read_parts.append('({})'.format(reading))
+                if word:
+                    read_parts.append('({})'.format(reading))
+                else:
+                    read_parts.append(reading)
             if read_parts:
                 readings.append(' '.join(read_parts))
 
