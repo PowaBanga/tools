@@ -65,7 +65,7 @@ def main(term):
             types = sense.get('parts_of_speech', '')
             if english or types:
                 parts.append('/')
-            if types:
+            if False and types:
                 for i, type in enumerate(types):
                     types[i] = types_map.get(type, type)
                 parts.append('[{}]'.format(', '.join(types)))
@@ -74,7 +74,7 @@ def main(term):
 
         if parts:
             joined_parts = ' '.join(parts)
-            if byte_length + len(joined_parts.encode('utf-8')) >= 430:
+            if byte_length + len(joined_parts.encode('utf-8')) >= 400:
                 break
             lineparts.append(joined_parts)
             byte_length += len(joined_parts.encode('utf-8'))
