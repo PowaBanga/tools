@@ -10,7 +10,7 @@ import os
 import pipes
 import time
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import shlex
 
@@ -97,6 +97,7 @@ url_fetch_data = {
 
 google_data = {'locked_until': 0}
 yuri_data = {'locked_until': 0}
+jisho_data = {'locked_until': 0}
 
 timer_filename = os.path.expanduser('~/.weechat/python/data/_timerdata.txt')
 
@@ -209,9 +210,10 @@ def timer_hook(ctx, pline, userdata):
     _userdata['hook'] = hook
     tid = add_timer(time_seconds, _userdata)
     _userdata['tid'] = tid
-
-    ctx.command('/notice {} timer set to {} seconds ({}, Timer Id: {})'.format(
-        caller, time_seconds, seconds_to_string(time_seconds), tid))
+    
+    dt = datetime.now() + timedelta(seconds=time_seconds)
+    ctx.command('/notice {} timer set to {} seconds ({}, Timer Id: {}, around: {})'.format(
+        caller, time_seconds, seconds_to_string(time_seconds), tid, dt.strftime('%Y-%m-%d %H:%M:%S')))
 
 
 @hook_irc_command('+deltimer')
@@ -240,6 +242,26 @@ def del_timer(ctx, pline, userdata):
             break
     else:
         ctx.command('/notice {} Timer not found.'.format(caller))
+
+
+@hook_irc_command('+jisho', userdata=jisho_data)
+def jisho_hook(ctx, pline, userdata):
+    if time.time() < userdata['locked_until']:
+        return
+
+    def _jisho_process_cb(returncode, stdout, stderr, _userdata):
+        if returncode == 0:
+            stdout = stdout.strip()
+            if not stdout:
+                return
+            ctx.command('/say {}'.format(stdout))
+
+    args = pline.trailing.split()
+    args.pop(0)
+    if args:
+        userdata['locked_until'] = time.time() + 10
+        param = ' '.join(args)
+        hook_process(['jisho.py', param], _jisho_process_cb)
 
 
 @hook_irc_command('+yuri', userdata=yuri_data)
@@ -288,6 +310,7 @@ def google_hook(ctx, pline, userdata):
 @hook_irc_command('+?')
 def inc_ask(ctx, pline, userdata):
     fn = '~/.weechat/python/data/' + ctx.server + '_' + ctx.channel + '.txt'
+    fn = fn.lower()
     fn = os.path.expanduser(fn)
     count = 0
     if os.path.exists(fn):
@@ -299,6 +322,7 @@ def inc_ask(ctx, pline, userdata):
 @hook_irc_command('+1')
 def inc_one(ctx, pline, userdata):
     fn = '~/.weechat/python/data/' + ctx.server + '_' + ctx.channel + '.txt'
+    fn = fn.lower()
     fn = os.path.expanduser(fn)
     count = 0
     if os.path.exists(fn):
@@ -447,8 +471,9 @@ def unicode(ctx, pline, userdata):
     except ValueError:
         name = 'n/a'
     nfd_symbol = unicodedata.normalize(u'NFD', symbol)
+    category = unicodedata.category(symbol)
     codepoint = ord(nfc_symbol)
-    outstr = u'Codepoint: U+{:X}, Name: {}.'.format(codepoint, name)
+    outstr = u'Codepoint: U+{:X}, Name: {}, Category: {}.'.format(codepoint, name, category)
     if len(nfd_symbol) > len(nfc_symbol):
         outstr += u' (Compose: '
         slist = []
