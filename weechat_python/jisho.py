@@ -77,10 +77,10 @@ def main(term):
 
         if parts:
             joined_parts = ' '.join(parts)
-            if byte_length + len(joined_parts.encode('utf-8')) >= 400:
+            if byte_length + 3 + len(joined_parts.encode('utf-8')) >= 400:
                 break
             lineparts.append(joined_parts)
-            byte_length += len(joined_parts.encode('utf-8'))
+            byte_length += 3 + len(joined_parts.encode('utf-8'))
 
     print(' | '.join(lineparts))
     sys.exit(0)
