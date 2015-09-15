@@ -47,6 +47,9 @@ def main(term):
             if read_parts:
                 readings.append(' '.join(read_parts))
 
+        if len(readings) > 4:
+            readings = readings[:4]
+            readings.append('…')
         parts.append(', '.join(readings))
 
         for num, sense in enumerate(entry['senses']):
@@ -58,7 +61,7 @@ def main(term):
             if len(engdefs) > 3:
                 engdefs = engdefs[:3]
                 engdefs.append('…')
-            english = '; '.join(engdefs)
+            english = ', '.join(engdefs)
             types = sense.get('parts_of_speech', '')
             if english or types:
                 parts.append('/')
