@@ -31,6 +31,9 @@ def main(term):
 
     byte_length = 0
     lineparts = []
+    if not data:
+        print('Sorry, no results found.')
+        return
 
     for entry in data:
         parts = []

@@ -259,7 +259,7 @@ def jisho_hook(ctx, pline, userdata):
     args = pline.trailing.split()
     args.pop(0)
     if args:
-        userdata['locked_until'] = time.time() + 10
+        userdata['locked_until'] = time.time() + 3
         param = ' '.join(args)
         hook_process(['jisho.py', param], _jisho_process_cb)
 
