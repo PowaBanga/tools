@@ -26,6 +26,8 @@ def main(term):
     response = requests.get(url, params=dict(keyword=term))
     obj = response.json()
     if obj['meta']['status'] != 200:
+        print('Sorry, some error occured (Status: {})'
+              .format(obj['meta']['status']))
         return
     data = obj['data']
 
