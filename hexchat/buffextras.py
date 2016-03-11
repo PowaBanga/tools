@@ -1,12 +1,12 @@
 # Python 3.3
 # HexChat 2.9.6
 
+import hexchat
+
 __module_name__ = "ZNC Buffextras"
 __module_version__ = "1.1"
 __module_description__ = "Displays the *buffextra lines from ZNC Buffextra " \
     "module nicely. Python implementation."
-
-import hexchat
 hexchat.emit_print("Generic Message", "Loading", "{} {} - {}".format(
                    __module_name__, __module_version__,
                    __module_description__))
