@@ -41,18 +41,24 @@ def privmsg(word, word_eol, userdata, attrs):
             nick, userhost = prefix, None
 
         if _type == 'set':
+            # :nick!ident@host set mode: +v other_nick
             send("Raw Modes", nick, "{} {}".format(channel, args[6:]))
         elif _type == 'joined':
+            # :nick!ident@host joined
             send("Join", nick, channel, userhost)
         elif _type == 'parted':
             if args.startswith('with message: ['):
+                # :nick!ident@host parted with message: [bla bla]
                 send("Part with Reason", nick, userhost, channel,
                      args[15:-1])
             else:
+                # :nick!ident@host parted
                 send("Part", nick, userhost, channel)
         elif _type == 'is':
+            # :nick!ident@host is now known as new_nick
             send("Change Nick", nick, args[13:])
         elif _type == 'quit':
+            # :nick!ident@host quit with message: [Quit: Leaving.]
             send("Quit", nick, args[15:-1], userhost)
         elif _type == 'kicked':
             send("Kick", nick, word[5], channel,
