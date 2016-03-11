@@ -66,7 +66,7 @@ def privmsg(word, word_eol, userdata, attrs):
             send("Server Error", "Unhandled *buffextras event:")
             send("Server Error",
                  "    {}".format(word_eol[3][1:]))
-        return hexchat.EAT_HEXCHAT
+        return hexchat.EAT_ALL
 
     return hexchat.EAT_NONE
 
@@ -84,4 +84,4 @@ def split_prefix(prefix):
     return (nick, user, host)
 
 
-hexchat.hook_server_attrs('PRIVMSG', privmsg)
+hexchat.hook_server_attrs('PRIVMSG', privmsg, priority=hexchat.PRI_HIGHEST)
