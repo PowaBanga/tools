@@ -41,7 +41,7 @@ def privmsg(word, word_eol, userdata, attrs):
             nick, userhost = prefix, None
 
         if _type == 'set':
-            send("Channel Modes", channel, args[6:])
+            send("Raw Modes", nick, "{} {}".format(channel, args[6:]))
         elif _type == 'joined':
             send("Join", nick, channel, userhost)
         elif _type == 'parted':
