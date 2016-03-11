@@ -4,7 +4,7 @@
 import hexchat
 
 __module_name__ = "ZNC Buffextras"
-__module_version__ = "1.1"
+__module_version__ = "1.2"
 __module_description__ = "Displays the *buffextra lines from ZNC Buffextra " \
     "module nicely. Python implementation."
 hexchat.emit_print("Generic Message", "Loading", "{} {} - {}".format(
