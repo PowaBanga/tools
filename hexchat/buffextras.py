@@ -1,15 +1,12 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 # Python 3.3
 # HexChat 2.9.6
 
+import hexchat
+
 __module_name__ = "ZNC Buffextras"
-__module_version__ = "1.1"
+__module_version__ = "1.2"
 __module_description__ = "Displays the *buffextra lines from ZNC Buffextra " \
     "module nicely. Python implementation."
-
-import hexchat
 hexchat.emit_print("Generic Message", "Loading", "{} {} - {}".format(
                    __module_name__, __module_version__,
                    __module_description__))
@@ -41,18 +38,24 @@ def privmsg(word, word_eol, userdata, attrs):
             nick, userhost = prefix, None
 
         if _type == 'set':
-            send("Channel Modes", channel, args[6:])
+            # :nick!ident@host set mode: +v other_nick
+            send("Raw Modes", nick, "{} {}".format(channel, args[6:]))
         elif _type == 'joined':
+            # :nick!ident@host joined
             send("Join", nick, channel, userhost)
         elif _type == 'parted':
             if args.startswith('with message: ['):
+                # :nick!ident@host parted with message: [bla bla]
                 send("Part with Reason", nick, userhost, channel,
                      args[15:-1])
             else:
+                # :nick!ident@host parted
                 send("Part", nick, userhost, channel)
         elif _type == 'is':
+            # :nick!ident@host is now known as new_nick
             send("Change Nick", nick, args[13:])
         elif _type == 'quit':
+            # :nick!ident@host quit with message: [Quit: Leaving.]
             send("Quit", nick, args[15:-1], userhost)
         elif _type == 'kicked':
             send("Kick", nick, word[5], channel,
@@ -63,7 +66,7 @@ def privmsg(word, word_eol, userdata, attrs):
             send("Server Error", "Unhandled *buffextras event:")
             send("Server Error",
                  "    {}".format(word_eol[3][1:]))
-        return hexchat.EAT_HEXCHAT
+        return hexchat.EAT_ALL
 
     return hexchat.EAT_NONE
 
@@ -81,4 +84,4 @@ def split_prefix(prefix):
     return (nick, user, host)
 
 
-hexchat.hook_server_attrs('PRIVMSG', privmsg)
+hexchat.hook_server_attrs('PRIVMSG', privmsg, priority=hexchat.PRI_HIGHEST)
