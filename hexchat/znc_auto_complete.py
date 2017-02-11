@@ -43,8 +43,7 @@ def get_inputbox_infos():
     if to_complete.startswith('*') and inputbox.lower().startswith(('/msg ', '/znc ')):
         # autocomplete channel/znc module
         pre_commands.pop(0)
-        print('autocomplete module: ', [pre_commands, before_cursor, to_complete, after_cursor])
-        return
+        return BoxInfo(None, pre_commands, to_complete, cursor_pos, before_cursor, after_cursor)
 
     # determine current module name and possibly already complete commands
     if inputbox.lower().startswith(('/msg *', '/znc *')):
@@ -58,6 +57,36 @@ def get_inputbox_infos():
         return
 
     return BoxInfo(channel, pre_commands, to_complete, cursor_pos, before_cursor, after_cursor)
+
+
+def get_candidates(boxinfo: BoxInfo):
+    if boxinfo.channel is None:
+        candidates = [cmd for cmd in COMMANDS
+                      if cmd.lower().startswith(boxinfo.to_complete.lower())]
+        candidates.sort(key=str.lower)
+        return candidates
+
+    commands = COMMANDS.get(boxinfo.channel, {})
+
+    while True:
+        for cmd in boxinfo.pre_commands:
+            case_map = {k.lower(): k for k in commands}
+            commands = commands.get(case_map.get(cmd.lower(), ''), {})
+            if callable(commands):
+                commands = commands(boxinfo)
+                if commands is None:
+                    commands = {}
+
+        candidates = [cmd for cmd in commands
+                      if cmd.lower().startswith(boxinfo.to_complete.lower())]
+        candidates.sort(key=str.lower)
+
+        if not isinstance(commands, OptionalDict) or candidates:
+            break
+        elif isinstance(commands, OptionalDict) and not candidates:
+            commands = commands.get_subcommand(boxinfo)
+
+    return candidates
 
 
 def key_press(word, word_eol, userdata):
@@ -82,24 +111,7 @@ def key_press(word, word_eol, userdata):
     if not boxinfo:
         return
 
-    commands = COMMANDS.get(boxinfo.channel, {})
-
-    while True:
-        for cmd in boxinfo.pre_commands:
-            case_map = {k.lower(): k for k in commands}
-            commands = commands.get(case_map.get(cmd.lower(), ''), {})
-            if callable(commands):
-                commands = commands(boxinfo)
-                if commands is None:
-                    commands = {}
-
-        candidates = [cmd for cmd in commands if cmd.lower().startswith(boxinfo.to_complete.lower())]
-        candidates.sort(key=str.lower)
-
-        if not isinstance(commands, OptionalDict) or candidates:
-            break
-        elif isinstance(commands, OptionalDict) and not candidates:
-            commands = commands.get_subcommand(boxinfo)
+    candidates = get_candidates(boxinfo)
 
     if not candidates:
         return
