@@ -4,7 +4,7 @@
 import hexchat
 
 __module_name__ = "ZNC Buffextras"
-__module_version__ = "1.2"
+__module_version__ = "1.3"
 __module_description__ = "Displays the *buffextra lines from ZNC Buffextra " \
     "module nicely. Python implementation."
 hexchat.emit_print("Generic Message", "Loading", "{} {} - {}".format(
@@ -43,7 +43,7 @@ def privmsg(word, word_eol, userdata, attrs):
         elif _type == 'joined':
             # :nick!ident@host joined
             send("Join", nick, channel, userhost)
-        elif _type == 'parted':
+        elif _type == 'parted:':
             if args.startswith('with message: ['):
                 # :nick!ident@host parted with message: [bla bla]
                 send("Part with Reason", nick, userhost, channel,
@@ -54,7 +54,7 @@ def privmsg(word, word_eol, userdata, attrs):
         elif _type == 'is':
             # :nick!ident@host is now known as new_nick
             send("Change Nick", nick, args[13:])
-        elif _type == 'quit':
+        elif _type == 'quit:':
             # :nick!ident@host quit with message: [Quit: Leaving.]
             send("Quit", nick, args[15:-1], userhost)
         elif _type == 'kicked':
